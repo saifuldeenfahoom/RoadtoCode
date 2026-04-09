@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Roads to Codes</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Fraunces:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #FDF8F3;
+            --bg-alt: #F5EDE4;
+            --fg: #1F1A16;
+            --fg-muted: #6B5D52;
+            --accent: #E85A4F;
+            --accent-light: #FF8A7A;
+            --secondary: #2D5A5A;
+            --card: #FFFFFF;
+            --border: #E8DDD2;
+            --success: #4A7C59;
+            --code-bg: #1E1E2E;
+        }
+
+        * { box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background-color: var(--bg);
+            color: var(--fg);
+            overflow-x: hidden;
+        }
+       
+        body.rtl { direction: rtl; text-align: right; }
+
+        h1, h2, h3, .font-display { font-family: 'Fraunces', serif; }
+
+        .grain::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            opacity: 0.03;
+            pointer-events: none;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+            z-index: 9999;
+        }
+
+        .blob {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.4;
+            animation: float 20s ease-in-out infinite;
+        }
+        .blob-1 { width: 400px; height: 400px; background: var(--accent-light); top: -100px; right: -100px; }
+        .blob-2 { width: 300px; height: 300px; background: var(--secondary); bottom: 20%; left: -100px; animation-delay: -7s; }
+        .blob-3 { width: 250px; height: 250px; background: #F4C95D; top: 50%; right: 10%; animation-delay: -14s; }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(30px, -30px) scale(1.05); }
+            66% { transform: translate(-20px, 20px) scale(0.95); }
+        }
+
+        .view-section { display: none; opacity: 0; }
+        .view-section.active { display: block; opacity: 1; animation: fadeIn 0.4s ease; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .course-card { transition: transform 0.3s ease, box-shadow 0.3s ease; cursor: pointer; }
+        .course-card:hover { transform: translateY(-5px); box-shadow: 0 15px 30px -10px rgba(0,0,0,0.1); }
+
+        .btn-primary {
+            background: var(--accent); color: white; padding: 12px 28px;
+            border-radius: 100px; font-weight: 600; border: none; cursor: pointer; transition: all 0.2s;
+        }
+        .btn-primary:hover { background: #d14d42; transform: scale(1.02); }
+       
+        .btn-secondary {
+            background: transparent; color: var(--fg); padding: 12px 28px;
+            border-radius: 100px; font-weight: 600; border: 2px solid var(--border); cursor: pointer; transition: all 0.2s;
+        }
+        .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+
+        .modal-overlay { opacity: 0; visibility: hidden; transition: all 0.3s; z-index: 100; }
+        .modal-overlay.active { opacity: 1; visibility: visible; }
+        .modal-content { transform: scale(0.95); transition: transform 0.3s; }
+        .modal-overlay.active .modal-content { transform: scale(1); }
+
+        .input-field {
+            width: 100%; padding: 14px 18px; border: 2px solid var(--border);
+            border-radius: 12px; background: var(--bg); font-size: 16px; margin-bottom: 12px;
+        }
+        .input-field:focus { outline: none; border-color: var(--accent); }
+
+        .lesson-item { transition: all 0.2s; border-left: 3px solid transparent; }
+        .lesson-item:hover { background: var(--bg-alt); border-left-color: var(--accent); }
+        .lesson-item.completed { background: rgba(74, 124, 89, 0.08); }
+        .lesson-item.completed .status-icon { background: var(--success); color: white; }
+
+        .code-editor { background: var(--code-bg); border-radius: 12px; overflow: hidden; font-family: 'monospace', monospace; }
+        .code-header { background: #2D2D3D; padding: 8px 16px; color: #aaa; font-size: 12px; display: flex; justify-content: space-between; }
+        .code-area {
+            width: 100%; min-height: 150px; background: transparent; border: none;
+            color: #E4E4E7; padding: 16px; font-family: inherit; font-size: 14px; resize: vertical;
+        }
+        .code-area:focus { outline: none; }
+        .code-output {
+            background: #16161E;
+            border-top: 1px solid #333;
+            padding: 16px;
+            color: #4ADE80;
+            font-family: monospace;
+            white-space: pre-wrap;
+            font-size: 14px;
+        }
+       
+        .exercise-box { background: var(--bg-alt); padding: 16px; border-radius: 8px; margin-top: 16px; }
+        .answer-box { background: rgba(74, 124, 89, 0.1); padding: 12px; border-radius: 8px; margin-top: 8px; border-left: 4px solid var(--success); }
+
+        .vocab-card { background: linear-gradient(135deg, #fff 0%, #f8f8f8 100%); border-radius: 16px; padding: 24px; margin-bottom: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border-left: 5px solid var(--secondary); }
+        .vocab-word { font-size: 2.5rem; font-weight: 900; color: var(--secondary); margin-bottom: 4px; }
+        .vocab-pron { font-size: 1.1rem; color: var(--accent); margin-bottom: 8px; font-style: italic; font-weight: 600; }
+        .vocab-trans { font-size: 1rem; color: var(--fg-muted); margin-bottom: 12px; }
+        
+        .lesson-text { line-height: 1.7; white-space: pre-wrap; font-family: 'DM Sans', sans-serif; }
+
+        /* AI Assistant Enhanced */
+        .ai-btn {
+            position: fixed; bottom: 24px; right: 24px; width: 60px; height: 60px;
+            background: linear-gradient(135deg, var(--accent), var(--secondary));
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            color: white; font-size: 24px; cursor: pointer; z-index: 999;
+            box-shadow: 0 4px 15px rgba(232, 90, 79, 0.4); transition: transform 0.2s;
+        }
+        .ai-btn:hover { transform: scale(1.1); }
+        .ai-chat {
+            position: fixed; bottom: 100px; right: 24px; width: 380px; height: 550px;
+            background: var(--card); border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+            display: none; flex-direction: column; z-index: 998; overflow: hidden;
+        }
+        .ai-chat.active { display: flex; }
+        .ai-header { padding: 16px; background: var(--secondary); color: white; display: flex; justify-content: space-between; align-items: center; }
+        
+        /* Tabs */
+        .ai-tabs { display: flex; border-bottom: 1px solid var(--border); background: var(--bg-alt); }
+        .ai-tab { flex: 1; padding: 10px; text-align: center; cursor: pointer; font-size: 14px; font-weight: 600; color: var(--fg-muted); transition: all 0.2s; border-bottom: 2px solid transparent; }
+        .ai-tab.active { color: var(--accent); border-bottom-color: var(--accent); background: var(--card); }
+        
+        .ai-messages { flex: 1; padding: 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
+        .ai-msg { padding: 10px 14px; border-radius: 12px; font-size: 14px; max-width: 90%; line-height: 1.5; }
+        .ai-msg.bot { background: var(--bg-alt); align-self: flex-start; }
+        .ai-msg.user { background: var(--accent); color: white; align-self: flex-end; }
+        .ai-input-area { padding: 12px; border-top: 1px solid var(--border); display: flex; gap: 8px; }
+        .ai-input { flex: 1; border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; font-size: 14px; }
+        .ai-send { background: var(--accent); color: white; border: none; border-radius: 8px; padding: 0 16px; cursor: pointer; font-weight: 600; }
+        
+        /* Translator Part Specific */
+        .trans-form { padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+        .trans-select { padding: 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); width: 100%; }
+
+        nav.scrolled { background: rgba(253, 248, 243, 0.95); backdrop-filter: blur(10px); box-shadow: 0 4px 20px rgba(0,0,0,0.05); }
+        .diff-beginner { background: #DCFCE7; color: #166534; }
+        .diff-intermediate { background: #FEF3C7; color: #92400E; }
+        .diff-advanced { background: #FEE2E2; color: #991B1B; }
+
+        .lang-btn { transition: all 0.3s; border: 2px solid transparent; }
+        .lang-btn:hover { transform: scale(1.05); border-color: var(--accent); }
+       
+        .course-icon { width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; border-radius: 12px; overflow: hidden; }
+    </style>
+</head>
+<body class="grain">
+
+    <div class="fixed inset-0 overflow-hidden pointer-events-none z-0">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+    </div>
+
+    <!-- Language Selection Modal -->
+    <div id="lang-selector" class="modal-overlay active fixed inset-0 bg-black/60 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
+        <div class="modal-content bg-[var(--card)] rounded-3xl p-10 w-full max-w-lg shadow-2xl text-center">
+            <h2 class="font-display text-3xl font-bold mb-2">Select Your Language</h2>
+            <p class="text-[var(--fg-muted)] mb-8">Choose your preferred language for the website interface.</p>
+            <div class="grid grid-cols-1 gap-4">
+                <button onclick="setLanguage('en')" class="lang-btn bg-[var(--bg-alt)] p-4 rounded-xl flex items-center justify-center gap-3 text-lg font-semibold"><span class="text-2xl">🇬🇧</span> English</button>
+                <button onclick="setLanguage('ar')" class="lang-btn bg-[var(--bg-alt)] p-4 rounded-xl flex items-center justify-center gap-3 text-lg font-semibold"><span class="text-2xl">🇸🇦</span> العربية (Arabic)</button>
+                <button onclick="setLanguage('fr')" class="lang-btn bg-[var(--bg-alt)] p-4 rounded-xl flex items-center justify-center gap-3 text-lg font-semibold"><span class="text-2xl">🇫🇷</span> Français (French)</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="fixed top-0 left-0 right-0 z-50 transition-all duration-300" id="navbar">
+        <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+            <a href="#" onclick="showView('landing')" class="flex items-center gap-3 group">
+                <img src="https://z-cdn-media.chatglm.cn/files/73d13656-a8b2-49d2-8c8c-5ac2078cef6e.png?auth_key=1874536202-f969f85bc24a4dc189f599dc88fef328-0-c1ff3c7f5bd03184f4ed9289d08db703" alt="Roads to Codes Logo" class="h-16 w-auto transition-transform group-hover:scale-105">
+            </a>
+            <div class="hidden md:flex items-center gap-8">
+                <button onclick="showView('landing')" class="translatable text-sm font-medium text-[var(--fg-muted)] hover:text-[var(--accent)] transition-colors" data-key="nav_home">Home</button>
+                <button onclick="scrollToSection('programming')" class="translatable text-sm font-medium text-[var(--fg-muted)] hover:text-[var(--accent)] transition-colors" data-key="nav_prog">Programming</button>
+                <button onclick="scrollToSection('languages')" class="translatable text-sm font-medium text-[var(--fg-muted)] hover:text-[var(--accent)] transition-colors" data-key="nav_lang">Languages</button>
+                <button onclick="scrollToSection('why-us')" class="translatable text-sm font-medium text-[var(--fg-muted)] hover:text-[var(--accent)] transition-colors" data-key="nav_why">Why Us</button>
+            </div>
+            <div class="flex items-center gap-3" id="auth-buttons">
+                <button id="login-btn" onclick="openModal('login')" class="btn-secondary hidden sm:block translatable" data-key="btn_login">Log In</button>
+                <button id="signup-btn" onclick="openModal('signup')" class="btn-primary translatable" data-key="btn_signup">Sign Up</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- LANDING VIEW -->
+    <div id="landing-view" class="view-section active relative z-10">
+        <section class="min-h-screen flex items-center pt-20">
+            <div class="max-w-7xl mx-auto px-6 py-20 grid lg:grid-cols-2 gap-12 items-center">
+                <div>
+                    <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[var(--bg-alt)] text-sm font-medium text-[var(--fg-muted)] mb-6">
+                        <span class="w-2 h-2 rounded-full bg-[var(--success)] animate-pulse"></span>
+                        <span class="translatable" data-key="hero_badge">Over 2,000 active learners</span>
+                    </div>
+                    <h1 class="font-display text-5xl sm:text-6xl lg:text-7xl font-bold leading-tight mb-6">
+                        <span class="translatable" data-key="hero_title_1">Your</span> <span class="text-[var(--accent)] translatable" data-key="hero_title_2">Roads to Codes</span> <span class="translatable" data-key="hero_title_3">Starts Here</span>
+                    </h1>
+                    <p class="text-lg text-[var(--fg-muted)] max-w-lg mb-8 leading-relaxed translatable" data-key="hero_desc">Master programming and human languages with detailed lessons.</p>
+                    <div class="flex flex-wrap gap-4 mb-12">
+                        <button onclick="scrollToSection('programming')" class="btn-primary text-lg translatable" data-key="hero_cta">Start Learning Free</button>
+                    </div>
+                </div>
+                <div class="relative hidden lg:block">
+                    <div class="absolute inset-0 bg-gradient-to-br from-[var(--accent-light)] to-[var(--secondary)] opacity-20 rounded-3xl blur-3xl"></div>
+                    <div class="relative bg-[var(--card)] rounded-3xl p-6 shadow-xl border border-[var(--border)]">
+                        <div class="flex items-center gap-2 mb-4">
+                            <div class="w-3 h-3 rounded-full bg-[#FF5F57]"></div><div class="w-3 h-3 rounded-full bg-[#FEBC2E]"></div><div class="w-3 h-3 rounded-full bg-[#28C840]"></div>
+                        </div>
+                        <pre class="text-sm leading-relaxed text-[var(--fg-muted)]"><code id="hero-code">// Click a course to start!</code></pre>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="programming" class="py-24">
+            <div class="max-w-7xl mx-auto px-6">
+                <div class="text-center mb-16">
+                    <h2 class="font-display text-4xl sm:text-5xl font-bold mb-4 translatable" data-key="prog_title">Master Programming</h2>
+                    <p class="text-lg text-[var(--fg-muted)] max-w-2xl mx-auto translatable" data-key="prog_desc">30 detailed lessons per course.</p>
+                </div>
+                <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6" id="programming-cards"></div>
+            </div>
+        </section>
+
+        <section id="languages" class="py-24 bg-[var(--bg-alt)]">
+            <div class="max-w-7xl mx-auto px-6">
+                <div class="text-center mb-16">
+                    <h2 class="font-display text-4xl sm:text-5xl font-bold mb-4 translatable" data-key="lang_title">Learn Human Languages</h2>
+                    <p class="text-lg text-[var(--fg-muted)] max-w-2xl mx-auto">Choose from 9 different languages with pronunciation guides.</p>
+                </div>
+                <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-5" id="language-cards"></div>
+            </div>
+        </section>
+
+        <section id="why-us" class="py-24">
+            <div class="max-w-7xl mx-auto px-6">
+                <div class="text-center mb-16">
+                    <h2 class="font-display text-4xl sm:text-5xl font-bold mb-4 translatable" data-key="why_title">Why Choose Roads to Codes</h2>
+                </div>
+                <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
+                    <div class="bg-[var(--card)] p-6 rounded-2xl border border-[var(--border)] text-center hover:shadow-lg transition-shadow">
+                        <div class="font-display text-4xl font-bold text-[var(--accent)] mb-2">2,847</div>
+                        <div class="text-[var(--fg-muted)] translatable" data-key="stat_1">Active Learners</div>
+                    </div>
+                    <div class="bg-[var(--card)] p-6 rounded-2xl border border-[var(--border)] text-center hover:shadow-lg transition-shadow">
+                        <div class="font-display text-4xl font-bold text-[var(--secondary)] mb-2">8</div>
+                        <div class="text-[var(--fg-muted)] translatable" data-key="stat_2">Teaching Awards</div>
+                    </div>
+                    <div class="bg-[var(--card)] p-6 rounded-2xl border border-[var(--border)] text-center hover:shadow-lg transition-shadow">
+                        <div class="font-display text-4xl font-bold text-[#4A7C59] mb-2">156</div>
+                        <div class="text-[var(--fg-muted)] translatable" data-key="stat_3">Expert Courses</div>
+                    </div>
+                    <div class="bg-[var(--card)] p-6 rounded-2xl border border-[var(--border)] text-center hover:shadow-lg transition-shadow">
+                        <div class="font-display text-4xl font-bold text-[#F4C95D] mb-2">83%</div>
+                        <div class="text-[var(--fg-muted)] translatable" data-key="stat_4">Satisfaction Rate</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+       
+        <footer class="py-12 border-t border-[var(--border)]">
+            <div class="max-w-7xl mx-auto px-6 text-center">
+                <img src="https://z-cdn-media.chatglm.cn/files/73d13656-a8b2-49d2-8c8c-5ac2078cef6e.png?auth_key=1874536202-f969f85bc24a4dc189f599dc88fef328-0-c1ff3c7f5bd03184f4ed9289d08db703" alt="Roads to Codes Logo" class="h-60 w-auto mx-auto mb-6">
+                <p class="text-lg text-[var(--fg)] font-medium mb-2 translatable" data-key="footer_thanks">I hope you have benefited from this website and thank you for visiting.</p>
+            </div>
+        </footer>
+    </div>
+
+    <!-- COURSE VIEW -->
+    <div id="course-view" class="view-section relative z-10 pt-24 pb-16">
+        <div class="max-w-5xl mx-auto px-6">
+            <div id="course-header" class="mb-8"></div>
+            <div class="bg-[var(--card)] rounded-2xl p-6 border border-[var(--border)] mb-8">
+                <div class="flex items-center justify-between mb-3">
+                    <span class="font-semibold translatable" data-key="progress">Your Progress</span>
+                    <span id="progress-text" class="text-sm text-[var(--fg-muted)]">0 of 30 completed</span>
+                </div>
+                <div class="h-3 bg-[var(--bg-alt)] rounded-full overflow-hidden">
+                    <div id="progress-bar" class="h-full bg-gradient-to-r from-[var(--accent)] to-[var(--accent-light)] transition-all duration-500" style="width: 0%"></div>
+                </div>
+            </div>
+            <div class="bg-[var(--card)] rounded-2xl border border-[var(--border)] overflow-hidden">
+                <div class="p-4 border-b border-[var(--border)] bg-[var(--bg-alt)]">
+                    <h3 class="font-semibold translatable" data-key="content">Course Content</h3>
+                </div>
+                <div id="lessons-list" class="divide-y divide-[var(--border)]"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- LESSON VIEW -->
+    <div id="lesson-view" class="view-section relative z-10 pt-24 pb-16">
+        <div class="max-w-4xl mx-auto px-6">
+            <button onclick="showView('course')" class="flex items-center gap-2 text-[var(--fg-muted)] hover:text-[var(--accent)] mb-6 transition-colors">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                <span class="translatable" data-key="back">Back to Course</span>
+            </button>
+            <div id="lesson-content" class="bg-[var(--card)] rounded-2xl border border-[var(--border)] overflow-hidden"></div>
+        </div>
+    </div>
+
+    <!-- AI ASSISTANT -->
+    <div class="ai-btn" onclick="toggleAI()">🤖</div>
+    <div class="ai-chat" id="ai-chat">
+        <div class="ai-header">
+            <span class="font-bold">Smart Assistant</span>
+            <button onclick="toggleAI()" class="text-sm opacity-80 hover:opacity-100">✕</button>
+        </div>
+        
+        <div class="ai-tabs">
+            <div class="ai-tab active" onclick="switchAITab('chat')">Chat</div>
+            <div class="ai-tab" onclick="switchAITab('translate')">Translate</div>
+        </div>
+
+        <!-- Chat Tab -->
+        <div id="ai-tab-chat" class="flex flex-col flex-1">
+            <div class="ai-messages" id="ai-messages">
+                <div class="ai-msg bot">Hello! I can explain concepts, check code, or translate. Try "What is a variable?"</div>
+            </div>
+            <div class="ai-input-area">
+                <input id="ai-text" class="ai-input" placeholder="Ask anything..." onkeypress="if(event.key==='Enter')sendMessage()">
+                <button class="ai-send" onclick="sendMessage()">Send</button>
+            </div>
+        </div>
+
+        <!-- Translate Tab -->
+        <div id="ai-tab-translate" class="flex-1 hidden overflow-y-auto">
+            <div class="trans-form">
+                <p class="text-sm text-gray-600 mb-2">Select target language and enter a word to translate.</p>
+                <select id="trans-lang" class="trans-select">
+                    <option value="ar">Arabic</option>
+                    <option value="fr">French</option>
+                    <option value="es">Spanish</option>
+                    <option value="ko">Korean</option>
+                    <option value="zh">Chinese</option>
+                    <option value="ja">Japanese</option>
+                    <option value="pt">Portuguese</option>
+                    <option value="pt-br">Brazilian</option>
+                </select>
+                <input id="trans-word" class="input-field" placeholder="Enter word (e.g., Hello)">
+                <button class="btn-primary w-full" onclick="translateWord()">Translate</button>
+                <div id="trans-result" class="mt-4 p-4 bg-gray-50 rounded-lg hidden">
+                    <div class="text-sm text-gray-500">Translation:</div>
+                    <div id="trans-word-res" class="text-2xl font-bold text-[var(--secondary)]"></div>
+                    <div id="trans-pron-res" class="text-sm text-[var(--accent)] italic mt-1"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL -->
+    <div class="modal-overlay fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" id="modal" onclick="closeModal(event)">
+        <div class="modal-content bg-[var(--card)] rounded-3xl p-8 w-full max-w-md shadow-2xl" onclick="event.stopPropagation()">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="font-display text-2xl font-bold" id="modal-title">Sign Up</h3>
+                <button onclick="closeModal()" class="p-2 hover:bg-[var(--bg-alt)] rounded-full transition-colors">&times;</button>
+            </div>
+            <form id="signup-form" class="space-y-4" onsubmit="handleSubmit(event, 'signup')">
+                <input type="text" class="input-field" placeholder="Full Name" required>
+                <input type="email" class="input-field" placeholder="Email Address" required>
+                <input type="password" class="input-field" placeholder="Create Password" required>
+                <button type="submit" class="btn-primary w-full translatable" data-key="btn_signup">Create Account</button>
+                <p class="text-center text-sm text-[var(--fg-muted)]"><span class="translatable" data-key="has_account">Already have an account?</span> <button type="button" onclick="toggleAuthForm('login')" class="text-[var(--accent)] font-semibold translatable" data-key="btn_login">Log In</button></p>
+            </form>
+            <form id="login-form" class="space-y-4 hidden" onsubmit="handleSubmit(event, 'login')">
+                <input type="email" class="input-field" placeholder="Email Address" required>
+                <input type="password" class="input-field" placeholder="Enter Password" required>
+                <button type="submit" class="btn-primary w-full translatable" data-key="btn_login">Log In</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // === TRANSLATIONS ===
+        const translations = {
+            en: { nav_home: "Home", nav_prog: "Programming", nav_lang: "Languages", nav_why: "Why Us", btn_login: "Log In", btn_signup: "Sign Up", hero_badge: "Over 2,000 active learners", hero_title_1: "Your", hero_title_2: "Roads to Codes", hero_title_3: "Starts Here", hero_desc: "Master programming with detailed lessons.", hero_cta: "Start Learning Free", prog_title: "Master Programming", lang_title: "Learn Languages", why_title: "Why Choose Us", stat_1: "Active Learners", stat_2: "Awards", stat_3: "Courses", stat_4: "Satisfaction", footer_thanks: "I hope you have benefited from this website and thank you for visiting.", progress: "Your Progress", content: "Course Content", back: "Back", has_account: "Already have an account?", no_account: "Don't have an account?", complete: "Mark Complete", prev: "Previous", output_label: "Output", tip: "Tip", exercise: "Exercise", explanation: "Explanation", code: "Code", pron_label: "Pronunciation" },
+            ar: { nav_home: "الرئيسية", nav_prog: "البرمجة", nav_lang: "اللغات", nav_why: "لماذا نحن", btn_login: "تسجيل دخول", btn_signup: "إنشاء حساب", hero_badge: "أكثر من 2000 متعلم نشط", hero_title_1: "طرقك", hero_title_2: "إلى", hero_title_3: "الأكواد تبدأ من هنا", hero_desc: "أتقن لغات البرمجة مع دروس مفصلة.", hero_cta: "ابدأ التعلم مجاناً", prog_title: "تعلم البرمجة", lang_title: "تعلم اللغات", why_title: "لماذا تختارنا", stat_1: "متعلمين", stat_2: "جوائز", stat_3: "دورات", stat_4: "رضا", footer_thanks: "آمل أن تكون قد استفدت من هذا الموقع وشكراً لزيارتك.", progress: "تقدمك", content: "محتوى الدورة", back: "العودة", has_account: "لديك حساب بالفعل؟", no_account: "ليس لديك حساب؟", complete: "أكمل", prev: "السابق", output_label: "الناتج", tip: "نصيحة", exercise: "تمرين", explanation: "شرح", code: "كود", pron_label: "النطق" },
+            fr: { nav_home: "Accueil", nav_prog: "Programmation", nav_lang: "Langues", nav_why: "Pourquoi Nous", btn_login: "Connexion", btn_signup: "S'inscrire", hero_badge: "Plus de 2000 apprenants", hero_title_1: "Vos", hero_title_2: "Routes vers les Codes", hero_title_3: "commencent ici", hero_desc: "Maîtrisez la programmation.", hero_cta: "Commencer", prog_title: "Programmation", lang_title: "Langues", why_title: "Pourquoi Nous", stat_1: "Apprenants", stat_2: "Prix", stat_3: "Cours", stat_4: "Satisfaction", footer_thanks: "J'espère que ce site vous a été utile.", progress: "Progression", content: "Contenu", back: "Retour", has_account: "Vous avez un compte?", no_account: "Pas de compte?", complete: "Terminer", prev: "Précédent", output_label: "Sortie", tip: "Conseil", exercise: "Exercice", explanation: "Explication", code: "Code", pron_label: "Prononciation" }
+        };
+
+        // === STATE ===
+        let currentLang = 'en';
+        let currentCourse = null;
+        let completedLessons = {};
+        let isLoggedIn = false;
+        let isAIOpen = false;
+
+        // === COURSE DATA ===
+        const courses = [
+            { id: 'python', name: 'Python', type: 'programming', color: '#3776AB', icon: `<svg viewBox="0 0 24 24" fill="currentColor" class="w-full h-full text-white"><path d="M14.25.18l.9.2.73.26.59.3.45.32.34.34.25.34.16.33.1.3.04.26.02.2-.01.13V8.5l-.05.63-.13.55-.21.46-.26.38-.3.31-.33.25-.35.19-.35.14-.33.1-.3.07-.26.04-.21.02H8.77l-.69.05-.59.14-.5.22-.41.27-.33.32-.27.35-.2.36-.15.37-.1.35-.07.32-.04.27-.02.21v3.06H3.17l-.21-.03-.28-.07-.32-.12-.35-.18-.36-.26-.36-.36-.35-.46-.32-.59-.28-.73-.21-.88-.14-1.05-.05-1.23.06-1.22.16-1.04.24-.87.32-.71.36-.57.4-.44.42-.33.42-.24.4-.16.36-.1.32-.05.24-.01h.16l.06.01h8.16v-.83H6.18l-.01-2.75-.02-.37.05-.34.11-.31.17-.28.25-.26.31-.23.38-.2.44-.18.51-.15.58-.12.64-.1.71-.06.77-.04.84-.02 1.27.05zm-6.3 1.98l-.23.33-.08.41.08.41.23.34.33.22.41.09.41-.09.33-.22.23-.34.08-.41-.08-.41-.23-.33-.33-.22-.41-.09-.41.09-.33.22z"/></svg>` },
+            { id: 'cpp', name: 'C++', type: 'programming', color: '#00599C', icon: `<svg viewBox="0 0 24 24" fill="currentColor" class="w-full h-full text-white"><path d="M22.394 6c-.167-.29-.398-.543-.652-.69L12.926.22c-.509-.294-1.34-.294-1.848 0L2.26 5.31c-.508.293-.923 1.013-.923 1.6v10.18c0 .294.104.62.271.91.167.29.398.543.652.69l8.816 5.09c.508.293 1.34.293 1.848 0l8.816-5.09c.254-.147.485-.4.652-.69.167-.29.27-.616.27-.91V6.91c.003-.294-.1-.62-.268-.91zM12 19.11c-3.92 0-7.109-3.19-7.109-7.11 0-3.92 3.19-7.11 7.109-7.11a7.133 7.133 0 016.156 3.553l-3.076 1.78a3.567 3.567 0 00-3.08-1.78A3.56 3.56 0 008.444 12 3.56 3.56 0 0012 15.555a3.57 3.57 0 003.08-1.778l3.078 1.78A7.135 7.135 0 0112 19.11zm7.11-6.715h-.79v.79h-.79v-.79h-.79v-.79h.79v-.79h.79v.79h.79zm2.962 0h-.79v.79h-.79v-.79h-.79v-.79h.79v-.79h.79v.79h.79z"/></svg>` },
+            { id: 'javascript', name: 'JavaScript', type: 'programming', color: '#F7DF1E', icon: `<svg viewBox="0 0 24 24" fill="currentColor" class="w-full h-full text-black"><path d="M0 0h24v24H0V0zm22.034 18.276c-.175-1.095-.888-2.015-3.003-2.873-.736-.345-1.554-.585-1.797-1.14-.091-.33-.105-.51-.046-.705.15-.646.915-.84 1.515-.66.39.12.75.42.976.9 1.034-.676 1.034-.676 1.755-1.125-.27-.42-.404-.601-.586-.78-.63-.705-1.469-1.065-2.834-1.034l-.705.089c-.676.165-1.32.525-1.71 1.005-1.14 1.291-.811 3.541.569 4.471 1.365 1.02 3.361 1.244 3.616 2.205.24 1.17-.87 1.545-1.966 1.41-.811-.18-1.26-.586-1.755-1.336l-1.83 1.051c.21.48.45.689.81 1.109 1.74 1.756 6.09 1.666 6.871-1.004.029-.09.24-.705.074-1.65l.046.067z"/></svg>` },
+            { id: 'html', name: 'HTML & CSS', type: 'programming', color: '#E34F26', icon: `<svg viewBox="0 0 24 24" fill="currentColor" class="w-full h-full text-white"><path d="M1.5 0h21l-1.91 21.563L11.977 24l-8.564-2.438L1.5 0zm7.031 9.75l-.232-2.718 10.059.003.23-2.622L5.412 4.41l.698 8.01h9.126l-.326 3.426-2.91.804-2.955-.81-.188-2.11H6.248l.33 4.171L12 19.351l5.379-1.443.744-8.157H8.531z"/></svg>` },
+            { id: 'qb64', name: 'QB64', type: 'programming', color: '#00A0E3', icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-full h-full text-white"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 8h8M8 12h5M8 16h6"/></svg>` },
+            { id: 'english', name: 'English', type: 'language', code: 'en', flag: 'EN', color: '#3B82F6' },
+            { id: 'arabic', name: 'Arabic', type: 'language', code: 'ar', flag: 'AR', color: '#10B981' },
+            { id: 'french', name: 'French', type: 'language', code: 'fr', flag: 'FR', color: '#6366F1' },
+            { id: 'spanish', name: 'Spanish', type: 'language', code: 'es', flag: 'ES', color: '#EF4444' },
+            { id: 'korean', name: 'Korean', type: 'language', code: 'ko', flag: 'KO', color: '#0284C7' },
+            { id: 'chinese', name: 'Chinese', type: 'language', code: 'zh', flag: 'ZH', color: '#DC2626' },
+            { id: 'japanese', name: 'Japanese', type: 'language', code: 'ja', flag: 'JA', color: '#E11D48' },
+            { id: 'portuguese', name: 'Portuguese', type: 'language', code: 'pt', flag: 'PT', color: '#059669' },
+            { id: 'brazilian', name: 'Brazilian', type: 'language', code: 'pt-br', flag: 'BR', color: '#16A34A' },
+        ];
+
+        // === LESSON DATA ===
+        const specificLessons = {
+            'python': { 1: { t: "Hello World", c: "print() → tells Python to display something on the screen", code: 'print("Hello, World!")', out: "Hello, World!" }, 2: { t: "Variables", c: "name → variable (a container to store data)", code: 'name = "Ali"\nage = 16', out: "" }, 3: { t: "Input", c: "input() → waits for the user to type something", code: 'name = input("Enter name: ")\nprint(name)', out: "" }, 4: { t: "Operators", c: "+ → addition\n- → subtraction", code: 'print(5 + 2)', out: "7" }, 5: { t: "Conditions", c: "if → checks a condition", code: 'x = 5\nif x > 0:\n    print("Positive")', out: "Positive" }, 6: { t: "Loops", c: "for → loop (repeat code)", code: 'for i in range(5):\n    print(i)', out: "0..4" }, 7: { t: "Strings", c: "text → string", code: 'text = "Hello"\nprint(text[0])', out: "H" }, 8: { t: "Lists", c: "[1,2,3] → list", code: 'nums = [1,2,3]\nnums.append(4)', out: "" }, 9: { t: "Sets", c: "{} → set", code: 's = {1,2,2}\nprint(s)', out: "{1, 2}" }, 10: { t: "Dictionaries", c: "Key-Value pairs", code: 'd = {"name":"Ali"}', out: "" } },
+            'cpp': { 1: { t: "Hello World", c: "iostream contains code for input and output", code: '#include <iostream>\nint main(){\n  cout << "Hello";\n  return 0;\n}', out: "Hello" }, 2: { t: "Variables", c: "int → whole number", code: 'int age = 16;', out: "" }, 3: { t: "Input", c: "cin → input", code: 'int a = 5;\ncin >> a;', out: "" }, 4: { t: "Operators", c: "+ - * / %", code: 'cout << 5+2;', out: "7" }, 5: { t: "Conditions", c: "if → checks condition", code: 'if(x>0) cout<<"Pos";', out: "" }, 6: { t: "Loops", c: "for loop", code: 'for(int i=0;i<3;i++) cout<<i;', out: "012" }, 7: { t: "Arrays", c: "arr[3] → array of size 3", code: 'int arr[3]={1,2,3};', out: "" }, 8: { t: "Strings", c: "Strings are arrays of characters", code: 'string s="Hi";', out: "" }, 9: { t: "Functions", c: "Functions", code: 'int add(int a, int b){return a+b;}', out: "" }, 10: { t: "Scope", c: "Global vs Local", code: 'int x=10;', out: "" } },
+            'javascript': { 1: { t: "Hello World", c: "console.log() prints to console", code: 'console.log("Hello");', out: "Hello" }, 2: { t: "Variables", c: "let/const", code: 'let x = 5;', out: "" }, 3: { t: "Data Types", c: "Types", code: 'let n = 10;', out: "" }, 4: { t: "Input", c: "prompt/alert", code: 'alert("Hi");', out: "" }, 5: { t: "Operators", c: "Math", code: 'console.log(5+2);', out: "7" }, 6: { t: "Conditions", c: "if/else", code: 'if(1) console.log(1);', out: "1" }, 7: { t: "Switch", c: "switch", code: 'switch(1){case 1: break;}', out: "" }, 8: { t: "For Loop", c: "for", code: 'for(let i=0;i<3;i++){}', out: "" }, 9: { t: "While", c: "while", code: 'while(i<5){}', out: "" }, 10: { t: "Functions", c: "function", code: 'function f(){}', out: "" } },
+            'html': { 1: { t: "Structure", c: "Basic HTML boilerplate", code: '<!DOCTYPE html><html></html>', out: "" }, 2: { t: "Headings", c: "h1-h6", code: '<h1>Hi</h1>', out: "Hi" }, 3: { t: "Paragraphs", c: "p", code: '<p>Text</p>', out: "Text" }, 4: { t: "Line Break", c: "br/hr", code: '<br>', out: "" }, 5: { t: "Formatting", c: "b/i/u", code: '<b>Bold</b>', out: "Bold" }, 6: { t: "Links", c: "a", code: '<a href="#">Link</a>', out: "Link" }, 7: { t: "Images", c: "img", code: '<img src="#">', out: "" }, 8: { t: "Lists", c: "ul/ol", code: '<ul><li>A</li></ul>', out: "List" }, 9: { t: "Tables", c: "table", code: '<table></table>', out: "" }, 10: { t: "Forms", c: "form/input", code: '<input type="text">', out: "" } },
+            'qb64': { 1: { t: "Print", c: "PRINT displays text", code: 'PRINT "Hello"', out: "Hello" }, 2: { t: "Variables", c: "Variables store data", code: 'A = 10', out: "" }, 3: { t: "Input", c: "INPUT", code: 'INPUT "Name: "; N$', out: "" }, 4: { t: "Math", c: "Math", code: 'PRINT 5 + 2', out: "7" }, 5: { t: "Conditions", c: "IF", code: 'IF x > 0 THEN PRINT "Pos"', out: "" }, 6: { t: "For Loop", c: "FOR", code: 'FOR I=1 TO 5: PRINT I: NEXT', out: "1 2 3 4 5" }, 7: { t: "While Loop", c: "WHILE", code: 'WHILE I<5: I=I+1: WEND', out: "" }, 8: { t: "Arrays", c: "DIM", code: 'DIM A(3)', out: "" }, 9: { t: "Strings", c: "Strings", code: 'A$ = "Hi"', out: "" }, 10: { t: "Functions", c: "FUNCTION", code: 'FUNCTION ADD(A,B)\nEND FUNCTION', out: "" } }
+        };
+
+        // === LANGUAGE DATA WITH PRONUNCIATION ===
+        const languageData = {
+            'en': { hello: { w: "Hello", p: "huh-LOH" }, goodbye: { w: "Goodbye", p: "good-BYE" }, thanks: { w: "Thank you", p: "THANK-yoo" }, please: { w: "Please", p: "PLEEZ" }, yes: { w: "Yes", p: "YES" }, no: { w: "No", p: "NOH" }, water: { w: "Water", p: "WAH-ter" }, food: { w: "Food", p: "FOOD" }, friend: { w: "Friend", p: "FREND" }, family: { w: "Family", p: "FAM-ih-lee" } },
+            'ar': { hello: { w: "مرحبا", p: "MAR-ha-ba" }, goodbye: { w: "وداعا", p: "wa-DAA-an" }, thanks: { w: "شكرا", p: "SHUK-ran" }, please: { w: "من فضلك", p: "min fad-LOCK" }, yes: { w: "نعم", p: "NA-am" }, no: { w: "لا", p: "LA" }, water: { w: "ماء", p: "MAA" }, food: { w: "طعام", p: "TA-am" }, friend: { w: "صديق", p: "SA-deeq" }, family: { w: "عائلة", p: "AA-i-la" } },
+            'fr': { hello: { w: "Bonjour", p: "bon-ZHOOR" }, goodbye: { w: "Au revoir", p: "oh ruh-VWAHR" }, thanks: { w: "Merci", p: "mer-SEE" }, please: { w: "S'il vous plaît", p: "seel voo PLEH" }, yes: { w: "Oui", p: "WEE" }, no: { w: "Non", p: "NON" }, water: { w: "Eau", p: "OH" }, food: { w: "Nourriture", p: "noo-ree-TYUR" }, friend: { w: "Ami", p: "ah-MEE" }, family: { w: "Famille", p: "fah-MEE" } },
+            'es': { hello: { w: "Hola", p: "OH-la" }, goodbye: { w: "Adiós", p: "ah-dee-OHS" }, thanks: { w: "Gracias", p: "GRAH-syahs" }, please: { w: "Por favor", p: "por fah-VOR" }, yes: { w: "Sí", p: "SEE" }, no: { w: "No", p: "NOH" }, water: { w: "Agua", p: "AH-gwah" }, food: { w: "Comida", p: "ko-MEE-dah" }, friend: { w: "Amigo", p: "ah-MEE-go" }, family: { w: "Familia", p: "fah-MEE-lyah" } },
+            'ko': { hello: { w: "안녕하세요", p: "an-nyeong-ha-se-yo" }, goodbye: { w: "안녕히 가세요", p: "an-nyeong-hi ga-se-yo" }, thanks: { w: "감사합니다", p: "gam-sa-ham-ni-da" }, please: { w: "제발", p: "je-bal" }, yes: { w: "예", p: "yeh" }, no: { w: "아니요", p: "a-ni-yo" }, water: { w: "물", p: "mul" }, food: { w: "음식", p: "eum-sik" }, friend: { w: "친구", p: "chin-gu" }, family: { w: "가족", p: "ga-jok" } },
+            'zh': { hello: { w: "你好", p: "nee-how" }, goodbye: { w: "再见", p: "dzai-jien" }, thanks: { w: "谢谢", p: "shieh-shieh" }, please: { w: "请", p: "ching" }, yes: { w: "是", p: "shr" }, no: { w: "不是", p: "boo-shr" }, water: { w: "水", p: "shway" }, food: { w: "食物", p: "shr-woo" }, friend: { w: "朋友", p: "pong-yo" }, family: { w: "家人", p: "jia-ren" } },
+            'ja': { hello: { w: "こんにちは", p: "kon-nee-chee-wa" }, goodbye: { w: "さようなら", p: "sa-yo-na-ra" }, thanks: { w: "ありがとう", p: "a-ri-ga-toh" }, please: { w: "お願いします", p: "o-ne-gai-shi-mas" }, yes: { w: "はい", p: "hai" }, no: { w: "いいえ", p: "ee-eh" }, water: { w: "水", p: "mee-zu" }, food: { w: "食べ物", p: "ta-be-mono" }, friend: { w: "友達", p: "to-mo-da-chi" }, family: { w: "家族", p: "ka-zo-ku" } },
+            'pt': { hello: { w: "Olá", p: "oh-LAH" }, goodbye: { w: "Adeus", p: "ah-DEOOSH" }, thanks: { w: "Obrigado", p: "oh-bree-GAH-doo" }, please: { w: "Por favor", p: "por fah-VOR" }, yes: { w: "Sim", p: "seem" }, no: { w: "Não", p: "nowng" }, water: { w: "Água", p: "AH-gwah" }, food: { w: "Comida", p: "ko-MEE-dah" }, friend: { w: "Amigo", p: "ah-MEE-goo" }, family: { w: "Família", p: "fah-MEE-lee-ah" } },
+            'pt-br': { hello: { w: "Oi", p: "oy" }, goodbye: { w: "Tchau", p: "chow" }, thanks: { w: "Obrigado", p: "oh-bree-GAH-doo" }, please: { w: "Por favor", p: "por fah-VOR" }, yes: { w: "Sim", p: "seem" }, no: { w: "Não", p: "nowng" }, water: { w: "Água", p: "AH-gwah" }, food: { w: "Comida", p: "ko-MEE-jah" }, friend: { w: "Amigo", p: "ah-MEE-goo" }, family: { w: "Família", p: "fah-MEE-lee-ah" } }
+        };
+
+        // === AI KNOWLEDGE BASE ===
+        const aiKnowledge = {
+            "variable": "A variable is a container for storing data values.",
+            "loop": "A loop is used to execute a block of code multiple times.",
+            "function": "A function is a block of code designed to perform a particular task.",
+            "array": "An array is a special variable, which can hold more than one value at a time.",
+            "string": "A string is a sequence of characters.",
+            "class": "A class is a blueprint for creating objects.",
+            "python": "Python is a high-level, interpreted programming language known for its clear syntax.",
+            "c++": "C++ is a general-purpose programming language created as an extension of the C programming language.",
+            "html": "HTML is the standard markup language for documents designed to be displayed in a web browser."
+        };
+
+        function generateLanguageLesson(course, lessonNum) {
+            const T = translations[currentLang];
+            const courseCode = course.code;
+            const diff = lessonNum <= 10 ? 'Beginner' : lessonNum <= 20 ? 'Intermediate' : 'Advanced';
+            const diffClass = lessonNum <= 10 ? 'diff-beginner' : lessonNum <= 20 ? 'diff-intermediate' : 'diff-advanced';
+
+            const keys = Object.keys(languageData['en']);
+            const keyIndex = (lessonNum - 1) % keys.length;
+            const key = keys[keyIndex];
+            
+            const sourceData = languageData['en'][key];
+            let targetData = languageData[courseCode] ? languageData[courseCode][key] : sourceData;
+            if (!targetData && courseCode === 'pt-br') targetData = languageData['pt'][key] || sourceData;
+
+            return {
+                type: 'language',
+                title: `Lesson ${lessonNum}: ${key.charAt(0).toUpperCase() + key.slice(1)}`,
+                content: `Learn the word for "${sourceData.w}" in ${course.name}.`,
+                difficulty: diff,
+                diffClass: diffClass,
+                isProg: false,
+                vocab: { word: targetData.w, pron: targetData.p, translation: sourceData.w },
+                exercises: [{q: `Translate: "${sourceData.w}"`, a: targetData.w}]
+            };
+        }
+
+        function generateProgrammingLesson(course, lessonNum) {
+            const T = translations[currentLang];
+            const diff = lessonNum <= 10 ? 'Beginner' : lessonNum <= 20 ? 'Intermediate' : 'Advanced';
+            const diffClass = lessonNum <= 10 ? 'diff-beginner' : lessonNum <= 20 ? 'diff-intermediate' : 'diff-advanced';
+           
+            const spec = specificLessons[course.id] ? specificLessons[course.id][lessonNum] : null;
+            if (spec) {
+                return {
+                    type: 'lesson', title: `Lesson ${lessonNum}: ${spec.t}`, content: spec.c,
+                    code: spec.code || "", output: spec.out || "",
+                    exercises: [],
+                    difficulty: diff, diffClass: diffClass, isProg: true, courseName: course.name
+                };
+            }
+            return { type: 'lesson', title: `Lesson ${lessonNum}`, content: "Content", code: "", output: "", exercises: [], difficulty: diff, diffClass: diffClass, isProg: true, courseName: course.name };
+        }
+
+        function generateLessonContent(courseId, lessonNum) {
+            const course = courses.find(c => c.id === courseId);
+            if (!course) return null;
+            if (course.type === 'language') return generateLanguageLesson(course, lessonNum);
+            return generateProgrammingLesson(course, lessonNum);
+        }
+
+        // === UI RENDERING ===
+        function setLanguage(lang) {
+            currentLang = lang;
+            document.getElementById('lang-selector').classList.remove('active');
+            if (lang === 'ar') document.body.classList.add('rtl'); else document.body.classList.remove('rtl');
+            updateUILanguage();
+        }
+        
+        function updateUILanguage() {
+            try {
+                const T = translations[currentLang];
+                document.querySelectorAll('.translatable').forEach(el => { const key = el.getAttribute('data-key'); if (T[key]) el.textContent = T[key]; });
+                renderCourses();
+            } catch (e) { console.error("Error updating language", e); }
+        }
+        
+        function renderCourses() {
+            const progContainer = document.getElementById('programming-cards');
+            const langContainer = document.getElementById('language-cards');
+            if (!progContainer || !langContainer) return;
+            progContainer.innerHTML = ''; langContainer.innerHTML = '';
+            courses.forEach(course => {
+                let logoHtml = '';
+                if (course.icon && course.icon.startsWith('<')) logoHtml = `<div class="course-icon" style="background: ${course.color}">${course.icon}</div>`;
+                else logoHtml = `<div class="w-12 h-12 rounded-xl flex items-center justify-center text-2xl font-bold" style="background: ${course.color}20">${course.flag || 'L'}</div>`;
+                const html = `<div class="course-card bg-[var(--card)] rounded-2xl p-6 border border-[var(--border)]" onclick="openCourse('${course.id}')"><div class="flex items-center gap-3 mb-4">${logoHtml}<h3 class="font-display text-xl font-bold">${course.name}</h3></div><p class="text-sm text-[var(--fg-muted)] mb-4">30 unique lessons.</p><div class="text-xs text-[var(--accent)] font-semibold">Start &rarr;</div></div>`;
+                if (course.type === 'programming') progContainer.innerHTML += html; else langContainer.innerHTML += html;
+            });
+        }
+        
+        function openCourse(courseId) {
+            currentCourse = courses.find(c => c.id === courseId);
+            if(!currentCourse) return;
+            const T = translations[currentLang];
+            let headerIcon = '';
+            if (currentCourse.icon && currentCourse.icon.startsWith('<')) headerIcon = `<div class="w-16 h-16 rounded-2xl flex items-center justify-center overflow-hidden" style="background: ${currentCourse.color}">${currentCourse.icon}</div>`;
+            else headerIcon = `<div class="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl font-bold" style="background: ${currentCourse.color}20">${currentCourse.flag || 'L'}</div>`;
+            document.getElementById('course-header').innerHTML = `<button onclick="showView('landing')" class="flex items-center gap-2 text-[var(--fg-muted)] hover:text-[var(--accent)] mb-4">&larr; Back</button><div class="flex items-center gap-4">${headerIcon}<div><h1 class="font-display text-3xl font-bold">${currentCourse.name}</h1><p class="text-[var(--fg-muted)]">30 Lessons</p></div></div>`;
+            
+            let lessonsHtml = '';
+            for (let i = 1; i <= 30; i++) {
+                const isCompleted = completedLessons[`${courseId}-${i}`];
+                const lessonPreview = generateLessonContent(courseId, i);
+                if(!lessonPreview) continue;
+                lessonsHtml += `<div class="lesson-item p-4 flex items-center justify-between cursor-pointer ${isCompleted ? 'completed' : ''}" onclick="openLesson(${i})"><div class="flex items-center gap-4"><div class="status-icon w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold ${isCompleted ? '' : 'bg-[var(--bg-alt)] text-[var(--fg-muted)]'}">${isCompleted ? '✓' : i}</div><div><h4 class="font-medium">${lessonPreview.title}</h4><span class="text-xs px-2 py-0.5 rounded-full ${lessonPreview.diffClass}">${lessonPreview.difficulty}</span></div></div><svg class="text-[var(--fg-muted)]" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg></div>`;
+            }
+            document.getElementById('lessons-list').innerHTML = lessonsHtml;
+            updateProgress(); showView('course');
+        }
+
+        function openLesson(lessonNum) {
+            const data = generateLessonContent(currentCourse.id, lessonNum);
+            if(!data) return;
+            const T = translations[currentLang];
+            let exercisesHtml = '';
+            if (data.exercises && data.exercises.length > 0) {
+                exercisesHtml = '<div class="mt-8 border-t border-[var(--border)] pt-6"><h3 class="font-bold mb-4">' + T.exercise + '</h3>';
+                data.exercises.forEach((ex, i) => exercisesHtml += `<div class="exercise-box"><p class="mb-2">${ex.q}</p><div class="answer-box"><code>${ex.a}</code></div></div>`);
+                exercisesHtml += '</div>';
+            }
+
+            let bodyContent = '';
+            if (data.isProg) {
+                bodyContent = `
+                <div class="p-6">
+                    <h3 class="font-bold text-lg mb-2">${T.code}</h3>
+                    <div class="mb-6 lesson-text leading-relaxed">${data.content}</div>
+                    ${data.tip ? `<div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6 text-sm"><strong>Tip:</strong> ${data.tip}</div>` : ''}
+                    <div class="code-editor mb-2">
+                        <div class="code-header"><span>${data.courseName} Code</span><span>Try on compiler</span></div>
+                        <textarea class="code-area" spellcheck="false" readonly>${data.code}</textarea>
+                        <div class="code-output"><span class="text-gray-400 mr-2">${T.output_label}:</span> ${data.output}</div>
+                    </div>
+                    ${exercisesHtml}
+                </div>`;
+            } else {
+                bodyContent = `
+                <div class="p-6">
+                    <div class="mb-6 leading-relaxed">${data.content}</div>
+                    <div class="vocab-card">
+                        <div class="text-sm uppercase tracking-wider text-[var(--fg-muted)] mb-1">${currentCourse.name}</div>
+                        <div class="vocab-word">${data.vocab.word}</div>
+                        <div class="vocab-pron">/${data.vocab.pron}/</div>
+                        <div class="vocab-trans"><strong>English:</strong> ${data.vocab.translation}</div>
+                    </div>
+                    ${exercisesHtml}
+                </div>`;
+            }
+
+            document.getElementById('lesson-content').innerHTML = `
+                <div class="p-6 border-b border-[var(--border)]"><span class="text-xs px-2 py-0.5 rounded-full ${data.diffClass}">${data.difficulty}</span><h2 class="font-display text-2xl font-bold mt-2">${data.title}</h2></div>
+                ${bodyContent}
+                <div class="p-6 bg-[var(--bg-alt)] flex items-center justify-between">
+                    <button onclick="openLesson(${Math.max(1, lessonNum - 1)})" class="btn-secondary">${T.prev}</button>
+                    <button onclick="completeLesson(${lessonNum})" class="btn-primary">${T.complete}</button>
+                </div>`;
+            showView('lesson');
+        }
+
+        // === SMART AI LOGIC ===
+        function toggleAI() { isAIOpen = !isAIOpen; document.getElementById('ai-chat').classList.toggle('active', isAIOpen); }
+        
+        function switchAITab(tab) {
+            document.querySelectorAll('.ai-tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById('ai-tab-chat').classList.toggle('hidden', tab !== 'chat');
+            document.getElementById('ai-tab-translate').classList.toggle('hidden', tab !== 'translate');
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('ai-text').value.trim();
+            if (!input) return;
+            
+            const container = document.getElementById('ai-messages');
+            container.innerHTML += `<div class="ai-msg user">${input.replace(/</g, "&lt;")}</div>`;
+            document.getElementById('ai-text').value = '';
+
+            // Process Input
+            let response = "";
+            const lowerInput = input.toLowerCase();
+
+            // 1. Code Detection (contains symbols)
+            if (lowerInput.includes("{") || lowerInput.includes(";") || lowerInput.includes("print") || lowerInput.includes("()") || lowerInput.includes("cout") || lowerInput.includes("<")) {
+                response = "Analyzing code...<br>";
+                let errors = [];
+                if(currentCourse && currentCourse.id === 'python') { if(lowerInput.includes('print ') && !lowerInput.includes('print(')) errors.push("Python 3 uses parentheses: print('text')"); }
+                if(currentCourse && currentCourse.id === 'cpp') { if(!lowerInput.includes(';')) errors.push("Missing semicolon (;)?"); }
+                if (errors.length === 0) response += "✅ Looks good!";
+                else errors.forEach(e => response += "⚠️ " + e + "<br>");
+            } 
+            // 2. Translation Detection
+            else if (lowerInput.startsWith("translate")) {
+                // Try to extract word and language
+                // Simple logic: "translate hello to spanish"
+                const parts = lowerInput.split(" ");
+                if (parts.length >= 4) {
+                    const word = parts[1];
+                    const langKey = parts[3]; // simplified
+                    // Try to find in languageData
+                    const langMap = { 'spanish': 'es', 'french': 'fr', 'arabic': 'ar', 'korean': 'ko', 'chinese': 'zh', 'japanese': 'ja', 'portuguese': 'pt', 'brazilian': 'pt-br' };
+                    const code = langMap[langKey];
+                    if (code && languageData[code] && languageData[code][word]) {
+                        const data = languageData[code][word];
+                        response = `<strong>Translation:</strong> ${data.w}<br><strong>Pronunciation:</strong> /${data.p}/`;
+                    } else {
+                        response = `I couldn't find "${word}" in my dictionary. Try the Translate tab!`;
+                    }
+                } else {
+                    response = "Use format: translate [word] to [language]. Example: translate hello to spanish";
+                }
+            }
+            // 3. Definition / Knowledge
+            else if (lowerInput.startsWith("what is") || lowerInput.startsWith("explain")) {
+                const term = lowerInput.replace("what is ", "").replace("explain ", "").replace("?", "");
+                if (aiKnowledge[term]) {
+                    response = aiKnowledge[term];
+                } else {
+                    response = `I don't have a specific definition for "${term}". Try asking about variables, loops, functions, or classes.`;
+                }
+            }
+            // 4. Greetings
+            else if (lowerInput === "hi" || lowerInput === "hello") {
+                response = "Hello! I am your Smart Assistant. I can:<br>1. Check your code for errors.<br>2. Explain programming concepts (e.g., 'What is a variable?').<br>3. Translate words (e.g., 'Translate hello to Spanish').";
+            }
+            // 5. Fallback
+            else {
+                response = "I'm not sure how to help with that. You can ask me to check code, explain concepts, or translate words using the Translate tab.";
+            }
+
+            container.innerHTML += `<div class="ai-msg bot">${response}</div>`;
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function translateWord() {
+            const word = document.getElementById('trans-word').value.toLowerCase();
+            const code = document.getElementById('trans-lang').value;
+            const resultDiv = document.getElementById('trans-result');
+            
+            if (languageData[code] && languageData[code][word]) {
+                const data = languageData[code][word];
+                document.getElementById('trans-word-res').textContent = data.w;
+                document.getElementById('trans-pron-res').textContent = `/${data.p}/`;
+                resultDiv.classList.remove('hidden');
+            } else {
+                document.getElementById('trans-word-res').textContent = "Word not found.";
+                document.getElementById('trans-pron-res').textContent = "Try: Hello, Water, Thanks, Friend...";
+                resultDiv.classList.remove('hidden');
+            }
+        }
+
+        function completeLesson(lessonNum) { 
+            completedLessons[`${currentCourse.id}-${lessonNum}`] = true; 
+            if (lessonNum < 30) openLesson(lessonNum + 1); 
+            else { alert("Congratulations!"); openCourse(currentCourse.id); } 
+        }
+        
+        function updateProgress() { 
+            let completed = 0; for (let i = 1; i <= 30; i++) { if (completedLessons[`${currentCourse.id}-${i}`]) completed++; } 
+            document.getElementById('progress-text').textContent = `${completed} / 30`; 
+            document.getElementById('progress-bar').style.width = `${(completed / 30) * 100}%`; 
+        }
+
+        // === SYSTEM ===
+        function showView(v) { document.querySelectorAll('.view-section').forEach(e => e.classList.remove('active')); const target = document.getElementById(`${v}-view`); if(target) target.classList.add('active'); window.scrollTo(0,0); }
+        function scrollToSection(id) { showView('landing'); setTimeout(() => document.getElementById(id).scrollIntoView({ behavior: 'smooth' }), 100); }
+        function openModal(t) { document.getElementById('modal').classList.add('active'); document.getElementById('modal-title').textContent = translations[currentLang][t==='login'?'btn_login':'btn_signup']; document.getElementById('signup-form').classList.toggle('hidden', t==='login'); document.getElementById('login-form').classList.toggle('hidden', t!=='login'); }
+        function closeModal(e) { if(!e || e.target.id==='modal') document.getElementById('modal').classList.remove('active'); }
+        function toggleAuthForm(t) { document.getElementById('login-form').classList.toggle('hidden'); document.getElementById('signup-form').classList.toggle('hidden'); document.getElementById('modal-title').textContent = translations[currentLang][t==='login'?'btn_login':'btn_signup']; }
+        function handleSubmit(e, t) { e.preventDefault(); isLoggedIn = true; document.getElementById('login-btn').style.display = 'none'; document.getElementById('signup-btn').textContent = "My Account"; closeModal(); }
+        window.addEventListener('scroll', () => document.getElementById('navbar').classList.toggle('scrolled', window.scrollY > 50));
+        if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", renderCourses); else renderCourses();
+    </script>
+</body
